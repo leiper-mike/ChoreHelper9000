@@ -19,7 +19,7 @@
   "homepage": "https://github.com/leiper-mike/ChoreHelper9000#readme",
   "dependencies": {
     "discord.js": "^14.13.0",
-    "dotenv": "^16.3.1"
-  },
-  "type": "module"
+    "dotenv": "^16.3.1",
+    "node-cron": "^3.0.2"
+  }
 }
