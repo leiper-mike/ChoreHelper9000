@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder } = require('discord.js');
-const {readChores} = require("../../choresUtilities")
+const {readChores, formatChores} = require("../../choresUtilities")
 
 module.exports = {
     cooldown: 5,
@@ -8,12 +8,21 @@ module.exports = {
 		.setDescription('DMs you a list of your weekly and daily chores')
         .setDMPermission(true),
 	async execute(interaction) {
-        const chores = await readChores(interaction.user.id)
+        const chores = await readChores(interaction.user.id, interaction.user.username)
+        const formattedChores = await formatChores(chores["chores"])
+        const addChoresButton = new ButtonBuilder()
+                    .setCustomId("addChores")
+                    .setLabel("Add Chores")
+                    .setStyle(ButtonStyle.Primary)
+        const completeChoresButton = new ButtonBuilder()
+                    .setCustomId("completeChoresModal")
+                    .setLabel("Complete a chore!")
+                    .setStyle(ButtonStyle.Success)                    
         const row = new ActionRowBuilder()
-	    .addComponents(component);
+                    .addComponents([addChoresButton, completeChoresButton]);
 
 
 
-		await interaction.reply({components: [row]});
+		await interaction.reply({content: formattedChores, components: [row]});
 	},
 };

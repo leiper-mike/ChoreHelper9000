@@ -4,13 +4,10 @@ const cron = require('node-cron')
 const { Client, GatewayIntentBits, ButtonBuilder, ButtonStyle,  REST, Routes, Events, Collection} = require('discord.js')
 const fs = require('node:fs');
 const path = require('node:path');
-
-// keep chores in a .txt file, in 'users' folder, new file per user
-// every day at configurable time, send message with list of chores
+//TODO:
 // some chores will only be on certain days, some are weekly (shows up every day but retains progress for the week)
-// button next to chore to complete it, adds checkmark emoji 
+// button next to chore to complete it, brings up modal with dropdown list of chores, adds checkmark emoji 
 // button to add chores, brings up modal
-// modal has text boxes for chore title, time picker, and day of week picker, tick box for weekly
 
 
 
@@ -53,47 +50,68 @@ for (const folder of commandFolders) {
 
 //listen for an interactionCreate event, try and execute the command
 client.on(Events.InteractionCreate, async interaction => {
-	if (!interaction.isChatInputCommand()) 
-    return;
+	if (interaction.isChatInputCommand()){
+    const command = interaction.client.commands.get(interaction.commandName);
 
-  const command = interaction.client.commands.get(interaction.commandName);
-
-	if (!command) {
-		console.error(`No command matching ${interaction.commandName} was found.`);
-		return;
-	}
-  const { cooldowns } = interaction.client;
-
-  if (!cooldowns.has(command.data.name)) {
-    cooldowns.set(command.data.name, new Collection());
-  }
+    if (!command) {
+      console.error(`No command matching ${interaction.commandName} was found.`);
+      return;
+    }
+    const { cooldowns } = interaction.client;
   
-  const now = Date.now();
-  const timestamps = cooldowns.get(command.data.name);
-  const defaultCooldownDuration = 3;
-  const cooldownAmount = (command.cooldown ?? defaultCooldownDuration) * 1000;
+    if (!cooldowns.has(command.data.name)) {
+      cooldowns.set(command.data.name, new Collection());
+    }
+    
+    const now = Date.now();
+    const timestamps = cooldowns.get(command.data.name);
+    const defaultCooldownDuration = 3;
+    const cooldownAmount = (command.cooldown ?? defaultCooldownDuration) * 1000;
+    
+    if (timestamps.has(interaction.user.id)) {
+      const expirationTime = timestamps.get(interaction.user.id) + cooldownAmount;
   
-  if (timestamps.has(interaction.user.id)) {
-    const expirationTime = timestamps.get(interaction.user.id) + cooldownAmount;
-
-    if (now < expirationTime) {
-      const expiredTimestamp = Math.round(expirationTime / 1000);
-      return interaction.reply({ content: `Please wait, you are on a cooldown for \`${command.data.name}\`. You can use it again <t:${expiredTimestamp}:R>.`, ephemeral: true });
+      if (now < expirationTime) {
+        const expiredTimestamp = Math.round(expirationTime / 1000);
+        return interaction.reply({ content: `Please wait, you are on a cooldown for \`${command.data.name}\`. You can use it again <t:${expiredTimestamp}:R>.`, ephemeral: true });
+      }
+    }
+  
+    timestamps.set(interaction.user.id, now);
+    setTimeout(() => timestamps.delete(interaction.user.id), cooldownAmount);
+  
+    try {
+      await command.execute(interaction);
+    } 
+    catch (error) {
+      console.error(error);
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
+      } else {
+        await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+      }
     }
   }
+  else if(interaction.isButton()){
+    const command = interaction.client.commands.get(interaction.customId);
 
-  timestamps.set(interaction.user.id, now);
-  setTimeout(() => timestamps.delete(interaction.user.id), cooldownAmount);
+    if (!command) {
+      console.error(`No command matching ${interaction.customId} was found.`);
+      return;
+    }
+    try {
+      await command.execute(interaction);
+    } 
+    catch (error) {
+      console.error(error);
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
+      } else {
+        await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+      }
+    }
+  }
+    
 
-	try {
-		await command.execute(interaction);
-	} 
-  catch (error) {
-		console.error(error);
-		if (interaction.replied || interaction.deferred) {
-			await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
-		} else {
-			await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
-		}
-	}
+  
 });

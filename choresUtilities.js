@@ -1,6 +1,76 @@
-const fs = require('node:fs');
+const { Collection } = require('discord.js');
+const { write } = require('node:fs');
+const fs = require('node:fs/promises');
+const path = require('node:path');
 module.exports ={
-    async readChores(userId){
-        const chores = fs.readFile(`/users/${userId}`)
+    /**
+     * Reads the users chores that are stored in their JSON
+     * @param {string} userId 
+     * @returns JSON object containing the username and chores in an array
+     */
+    async readChores(userId, userName){
+        const choresPath = path.join(__dirname, `/users/${userId}.json`);
+        try{
+            //trys to access
+            await fs.access(choresPath)
+        }
+        catch(err){
+            //creates new JSON file if it doesn't exist
+            const data = JSON.stringify({"username": userName, "chores":[]});
+            await fs.writeFile(choresPath, data)
+        }
+
+        return JSON.parse(await fs.readFile(choresPath));;
     },
+    /**
+     * 
+     * @param {string} userId Id of the user to add chores for
+     * @param {string} choreName name of chore
+     * @param {string} frequency how often the chore should be completed, daily, weekly, or specific
+     * @param {string} days days of the week to complete chores, only applies to specific frequency
+     * @returns 0 if the write fails, 1 if the write succeeds
+     */
+    async addChore(userId, choreName, frequency, days){
+        const chores = await this.readChores(userId);
+        chores["chores"].push({
+            "name": choreName,
+            "frequency": frequency,
+            "days": days
+        })
+        const data = JSON.stringify(chores);
+        const choresPath = path.join(__dirname, `/users/${userId}.json`);
+        try{
+            await fs.writeFile(choresPath, data)
+        }
+        catch(e){
+            console.log(e)
+            return 0;
+        }
+        return 1;
+    },
+    /**
+     * formats a given array of chores
+     * @param {Array} chores 
+     * @returns {string} Chores in one string
+     */
+    async formatChores(chores){
+        let ret = "";
+        chores.forEach(chore => {
+            let freq = ""
+            switch (chore.frequency) {
+                case "daily":
+                    freq = "Daily";
+                    break;
+                case "weekly":
+                    freq = "Weekly";
+                    break;
+                case "specific":
+                    freq = chore.days.toString();
+                default:
+                    break;
+            }
+            ret+= `${freq} ${chore.name} \n`
+        });
+        return ret;
+    }
 }
