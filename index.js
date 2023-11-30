@@ -6,8 +6,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 //TODO:
 // some chores will only be on certain days, some are weekly (shows up every day but retains progress for the week)
-// button next to chore to complete it, brings up modal with dropdown list of chores, adds checkmark emoji 
-// button to add chores, brings up modal
+// move all commands to DMs
+// reply with new message when adding chores, capture user input for chorename
+// listen for user input to complete chore after clicking complete button (either chore # or chore name)
 
 
 
