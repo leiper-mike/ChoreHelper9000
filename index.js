@@ -17,7 +17,9 @@ const client = new Client({
         GatewayIntentBits.GuildMessages, // for testing
         GatewayIntentBits.DirectMessages,
         GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.Guilds
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.DirectMessages,
+        GatewayIntentBits.MessageContent
     ]
 });
 
@@ -93,25 +95,25 @@ client.on(Events.InteractionCreate, async interaction => {
       }
     }
   }
-  else if(interaction.isButton()){
-    const command = interaction.client.commands.get(interaction.customId);
+  // else if(interaction.isButton()){
+  //   const command = interaction.client.commands.get(interaction.customId);
 
-    if (!command) {
-      console.error(`No command matching ${interaction.customId} was found.`);
-      return;
-    }
-    try {
-      await command.execute(interaction);
-    } 
-    catch (error) {
-      console.error(error);
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
-      } else {
-        await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
-      }
-    }
-  }
+  //   if (!command) {
+  //     console.error(`No command matching ${interaction.customId} was found.`);
+  //     return;
+  //   }
+  //   try {
+  //     await command.execute(interaction);
+  //   } 
+  //   catch (error) {
+  //     console.error(error);
+  //     if (interaction.replied || interaction.deferred) {
+  //       await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
+  //     } else {
+  //       await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+  //     }
+  //   }
+  // }
     
 
   

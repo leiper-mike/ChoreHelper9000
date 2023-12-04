@@ -10,19 +10,25 @@ module.exports = {
 	async execute(interaction) {
         const chores = await readChores(interaction.user.id, interaction.user.username)
         const formattedChores = await formatChores(chores["chores"])
-        const addChoresButton = new ButtonBuilder()
-                    .setCustomId("addChores")
-                    .setLabel("Add Chores")
-                    .setStyle(ButtonStyle.Primary)
         const completeChoresButton = new ButtonBuilder()
-                    .setCustomId("completeChoresModal")
+                    .setCustomId("completeChores")
                     .setLabel("Complete a chore!")
                     .setStyle(ButtonStyle.Success)                    
         const row = new ActionRowBuilder()
-                    .addComponents([addChoresButton, completeChoresButton]);
+                    .addComponents([completeChoresButton]);
 
 
 
-		await interaction.reply({content: formattedChores, components: [row]});
+		const response = await interaction.reply({content: formattedChores, components: [row]});
+
+        const componentFilter = i => i.user.id === interaction.user.id;
+		try {
+			const confirmation = await response.awaitMessageComponent({ filter: componentFilter, time: 60_000 });
+			if (confirmation.customId === 'completeChores') {
+
+            }
+		} catch (e) {
+			console.log(e)
+		}
 	},
 };

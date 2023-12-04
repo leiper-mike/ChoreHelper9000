@@ -1,18 +1,13 @@
-const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, PermissionFlagsBits, TextInputBuilder, TextInputStyle, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
-const {readChores} = require("../../choresUtilities")
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, InteractionResponse } = require('discord.js');
+const {addChore, readChores} = require("../../choresUtilities")
 
 module.exports = {
     cooldown: 5,
-	data: {
-        name: "addChores"
-    },
+	data: new SlashCommandBuilder()
+	.setName('addchores')
+	.setDescription('Add a new Chore!')
+	.setDMPermission(true),
 	async execute(interaction) {
-        const choreNameInput = new TextInputBuilder()
-            .setCustomId('choreNameInput')
-            .setLabel("Enter the chore below")
-            .setRequired(true)
-            .setStyle(TextInputStyle.Short)
-            ;
         const choreFrequencySelect = new StringSelectMenuBuilder()
 			.setCustomId('choreFrequencySelect')
 			.setPlaceholder('Daily')
@@ -70,8 +65,6 @@ module.exports = {
             .setCustomId("submitChores")
             .setLabel("Submit Chore!")
             .setStyle(ButtonStyle.Success)
-        const row1 = new ActionRowBuilder()
-	    .addComponents(choreNameInput);
         const row2 = new ActionRowBuilder()
 	    .addComponents(choreFrequencySelect);
         const row3 = new ActionRowBuilder()
@@ -79,6 +72,56 @@ module.exports = {
         const row4 = new ActionRowBuilder()
 	    .addComponents(submitButton);
 
-		await interaction.reply({components:[row1,row2,row3,row4]});
+		const channel = interaction.client.channels.cache.get(interaction.channelId)
+		const response = await interaction.reply({content: "Please enter 'Chore ' followed by the chore name, then select the frequency, and submit!", components:[row2,row3,row4]});
+		//collecting user input
+
+		let choreName;
+		let choreFrequency;
+		let choreDays;
+
+		const collectorFilter = m => m.content.toLowerCase().includes('chore');
+		const collector = interaction.channel.createMessageCollector({ filter: collectorFilter, max: 1 });
+		
+		collector.on('collect', m => {
+			choreName = m.content.substring(m.content.toLowerCase().indexOf("chore")+6)
+		});
+		
+		collector.on('end', async c => {
+			await channel.send("Recieved chore with name: " + choreName)
+		});
+
+		const componentCollector = response.createMessageComponentCollector({ time: 3_600_000 });
+
+		componentCollector.on('collect', async i => {
+			try {
+				if (i.customId === 'submitChores') {
+					console.log("submit")
+					if(choreName && ((choreFrequency == "specific" && days) || choreFrequency != "specific")){
+						const choresJSON = await readChores(i.user.id, i.user.username)
+						const res = await addChore(i.user.id, choreName, choreFrequency, choreDays, choresJSON)
+						if(res == 1)
+							await i.reply(`Chore added, with name: ${choreName}, and frequency: ${choreFrequency}`)
+						else 
+							await i.deferReply()
+					}
+					
+				}
+				else if(i.customId === 'choreFrequencySelect'){
+					console.log("frequency")
+					choreFrequency = i.values[0]
+					await i.deferUpdate()
+				}
+				else if(i.customId === 'choreDaySelect'){
+					console.log("day")
+					choreDays = i.values;
+					await i.deferUpdate()
+				}
+			} catch (e) {
+				console.log(e)
+			}
+		});
+		
+
 	},
 };

@@ -28,16 +28,16 @@ module.exports ={
      * @param {string} choreName name of chore
      * @param {string} frequency how often the chore should be completed, daily, weekly, or specific
      * @param {string} days days of the week to complete chores, only applies to specific frequency
+     * @param {JSON} choresJSON JSON object containing the user info and list of chores
      * @returns 0 if the write fails, 1 if the write succeeds
      */
-    async addChore(userId, choreName, frequency, days){
-        const chores = await this.readChores(userId);
-        chores["chores"].push({
+    async addChore(userId, choreName, frequency, days, choresJSON){
+        choresJSON["chores"].push({
             "name": choreName,
             "frequency": frequency,
             "days": days
         })
-        const data = JSON.stringify(chores);
+        const data = JSON.stringify(choresJSON);
         const choresPath = path.join(__dirname, `/users/${userId}.json`);
         try{
             await fs.writeFile(choresPath, data)
