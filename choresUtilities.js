@@ -1,5 +1,3 @@
-const { Collection } = require('discord.js');
-const { write } = require('node:fs');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 module.exports ={
@@ -20,7 +18,7 @@ module.exports ={
             await fs.writeFile(choresPath, data)
         }
 
-        return JSON.parse(await fs.readFile(choresPath));;
+        return JSON.parse(await fs.readFile(choresPath));
     },
     /**
      * 
@@ -32,21 +30,27 @@ module.exports ={
      * @returns 0 if the write fails, 1 if the write succeeds
      */
     async addChore(userId, choreName, frequency, days, choresJSON){
-        choresJSON["chores"].push({
-            "name": choreName,
-            "frequency": frequency,
-            "days": days
-        })
-        const data = JSON.stringify(choresJSON);
-        const choresPath = path.join(__dirname, `/users/${userId}.json`);
-        try{
-            await fs.writeFile(choresPath, data)
+        if(choresJSON["chores"].length <= 50){
+            choresJSON["chores"].push({
+                "id": choresJSON["chores"].length,
+                "name": choreName,
+                "frequency": frequency,
+                "days": days
+            })
+            const data = JSON.stringify(choresJSON);
+            const choresPath = path.join(__dirname, `/users/${userId}.json`);
+            try{
+                await fs.writeFile(choresPath, data)
+            }
+            catch(e){
+                console.log(e)
+                return 0;
+            }
+            return 1;
         }
-        catch(e){
-            console.log(e)
+        else{
             return 0;
         }
-        return 1;
     },
     /**
      * formats a given array of chores
@@ -55,6 +59,7 @@ module.exports ={
      */
     async formatChores(chores){
         let ret = "";
+        let count = 1;
         chores.forEach(chore => {
             let freq = ""
             switch (chore.frequency) {
@@ -69,8 +74,53 @@ module.exports ={
                 default:
                     break;
             }
-            ret+= `${freq} ${chore.name} \n`
+            ret+= `${count++}: (${freq}) ${chore.name} ${chore.completed ? "✅" : ""} \n`
         });
         return ret;
+    },
+    /**
+     * Marks chores as complete
+     * @param {string} userId
+     * @param {Array} chores array of chore ids to be marked as completed
+     * @param {JSON} choresJSON the JSON object containing the chores
+     */
+    async completeChores(userId, chores, choresJSON){
+        chores.forEach(c =>{
+            choresJSON["chores"][c-1].completed = true;
+        })
+        const data = JSON.stringify(choresJSON);
+        const choresPath = path.join(__dirname, `/users/${userId}.json`);
+        try{
+            await fs.writeFile(choresPath, data)
+        }
+        catch(e){
+            console.log(e)
+            return 0;
+        }
+        return 1;
+    },
+    /**
+     * resets chores back to uncompleted based on input
+     * @param {string} frequency daily | weekly
+     */
+    async resetChores(frequency){
+        const choresDirPath = path.join(__dirname, `/users`);
+        try {
+            const files = await fs.readdir(choresDirPath);
+            for (const file of files){
+                const userPath = path.join(__dirname, `/users/${file}`)
+                const choresJSON = JSON.parse(await fs.readFile(userPath));
+                for(chore of choresJSON["chores"]){
+                    if(chore.frequency === frequency || frequency === "weekly" && chore.frequency === "specific"){
+                        choresJSON["chores"][chore.id].completed = false;
+                    }
+                }
+            }
+
+        } catch (err) {
+            console.error(err);
+        } 
+
+        
     }
 }
