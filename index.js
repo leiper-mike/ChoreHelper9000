@@ -4,17 +4,23 @@ const cron = require('node-cron')
 const { Client, GatewayIntentBits, ButtonBuilder, ButtonStyle,  REST, Routes, Events, Collection} = require('discord.js')
 const fs = require('node:fs');
 const path = require('node:path');
+const {resetChores} = require("./choresUtilities")
 //TODO:
 // some chores will only be on certain days, some are weekly (shows up every day but retains progress for the week)
 // move all commands to DMs
-// reply with new message when adding chores, capture user input for chorename
-// listen for user input to complete chore after clicking complete button (either chore # or chore name)
+// add remove chore functionality, preserve relative ID ie, chore #5 should be shifted to #4 if #2 is removed
 
+cron.schedule('0 0 * * *', async () =>{
+  await resetChores("daily")
+})
+cron.schedule('0 0 * * 0', async () =>{
+  await resetChores("weekly")
+})
 
 
 const client = new Client({
     intents: [
-        GatewayIntentBits.GuildMessages, // for testing
+        GatewayIntentBits.GuildMessages, 
         GatewayIntentBits.DirectMessages,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.Guilds,
