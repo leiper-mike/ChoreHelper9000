@@ -91,12 +91,11 @@ module.exports = {
 			await channel.send("Recieved chore with name: " + choreName)
 		});
 
-		const componentCollector = response.createMessageComponentCollector({ time: 3_600_000 });
+		const componentCollector = response.createMessageComponentCollector();
 
 		componentCollector.on('collect', async i => {
 			try {
 				if (i.customId === 'submitChores') {
-					console.log("submit")
 					if(choreName && ((choreFrequency == "specific" && days) || choreFrequency != "specific")){
 						const choresJSON = await readChores(i.user.id, i.user.username)
 						const res = await addChore(i.user.id, choreName, choreFrequency, choreDays, choresJSON)
@@ -108,12 +107,10 @@ module.exports = {
 					
 				}
 				else if(i.customId === 'choreFrequencySelect'){
-					console.log("frequency")
 					choreFrequency = i.values[0]
 					await i.deferUpdate()
 				}
 				else if(i.customId === 'choreDaySelect'){
-					console.log("day")
 					choreDays = i.values;
 					await i.deferUpdate()
 				}
