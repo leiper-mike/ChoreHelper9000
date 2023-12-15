@@ -6,12 +6,13 @@ const {
      ModalBuilder,
      StringSelectMenuBuilder,
      StringSelectMenuOptionBuilder,
+     PermissionFlagsBits,
 } = require("discord.js");
 const { readChores, formatChores, completeChores, removeChores } = require("../../choresUtilities");
 
 module.exports = {
      cooldown: 5,
-     data: new SlashCommandBuilder().setName("chores").setDescription("DMs you a list of your weekly and daily chores").setDMPermission(true),
+     data: new SlashCommandBuilder().setName("chores").setDescription("DMs you a list of your weekly and daily chores").setDMPermission(true).setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
      async execute(interaction) {
           const chores = await readChores(interaction.user.id, interaction.user.username);
           if (chores["chores"].length != 0) {
@@ -109,6 +110,7 @@ module.exports = {
                                                        components: [row1, row2],
                                                   });
                                              } else if (inter.customId === "cancel") {
+                                                  inter.deferUpdate();
                                                   inter.deleteReply();
                                                   //inter.reply("Canceled.");
                                              }
