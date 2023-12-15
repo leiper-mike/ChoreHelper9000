@@ -5,23 +5,26 @@ const {
      ButtonStyle,
      StringSelectMenuBuilder,
      StringSelectMenuOptionBuilder,
-     InteractionResponse,
+     PermissionFlagsBits,
 } = require("discord.js");
 const { addChore, readChores } = require("../../choresUtilities");
 
 module.exports = {
      cooldown: 5,
-     data: new SlashCommandBuilder().setName("addchores").setDescription("Add a new Chore!").setDMPermission(true),
+     data: new SlashCommandBuilder()
+          .setName("addchores")
+          .setDescription("Add a new Chore!")
+          .setDMPermission(true)
+          .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+          .addStringOption((option) => option.setName("input").setDescription("Enter the chore").setRequired(true)),
      async execute(interaction) {
           const choreFrequencySelect = new StringSelectMenuBuilder()
                .setCustomId("choreFrequencySelect")
-               .setPlaceholder("Daily")
                .addOptions(
                     new StringSelectMenuOptionBuilder()
                          .setLabel("Daily")
                          .setDescription("This chore is to be completed once a day")
-                         .setValue("daily")
-                         .setDefault(true),
+                         .setValue("daily"),
                     new StringSelectMenuOptionBuilder()
                          .setLabel("Weekly")
                          .setDescription("This chore is to be completed once a week")
@@ -33,7 +36,6 @@ module.exports = {
                );
           const choreDaysSelect = new StringSelectMenuBuilder()
                .setCustomId("choreDaySelect")
-               .setPlaceholder("Daily")
                .setMinValues(0)
                .setMaxValues(7)
                .addOptions(
@@ -52,40 +54,46 @@ module.exports = {
 
           const channel = interaction.client.channels.cache.get(interaction.channelId);
           const response = await interaction.reply({
-               content: "Please enter 'Chore ' followed by the chore name, then select the frequency, and submit!",
-               components: [row2, row3, row4],
+               content: "Please select the frequency of the chore (if specific, specify the days in the last drop down) and submit!",
+               components: [row2, row4],
           });
           //collecting user input
 
-          let choreName;
-          let choreFrequency;
+          let choreName = interaction.options.getString("input");
+          let choreFrequency = "daily";
+          let daysEnabled = false;
           let choreDays;
-
-          const collectorFilter = (m) => m.content.toLowerCase().includes("chore");
-          const collector = interaction.channel.createMessageCollector({ filter: collectorFilter, max: 1 });
-
-          collector.on("collect", (m) => {
-               choreName = m.content.substring(m.content.toLowerCase().indexOf("chore") + 6);
-          });
-
-          collector.on("end", async (c) => {
-               await channel.send("Recieved chore with name: " + choreName);
-          });
 
           const componentCollector = response.createMessageComponentCollector();
 
           componentCollector.on("collect", async (i) => {
                try {
                     if (i.customId === "submitChores") {
-                         if (choreName && ((choreFrequency == "specific" && days) || choreFrequency != "specific")) {
+                         if (choreName && ((choreFrequency == "specific" && choreDays) || choreFrequency != "specific")) {
                               const choresJSON = await readChores(i.user.id, i.user.username);
-                              const res = await addChore(i.user.id, choreName, choreFrequency ? choreFrequency : "daily", choreDays, choresJSON);
+                              const res = await addChore(i.user.id, choreName, choreFrequency, choreDays, choresJSON);
                               if (res == 1) await i.reply(`Chore added, with name: ${choreName}, and frequency: ${choreFrequency}`);
                               else await i.deferReply();
                          }
                     } else if (i.customId === "choreFrequencySelect") {
                          choreFrequency = i.values[0];
-                         await i.deferUpdate();
+                         if (choreFrequency == "specific") {
+                              daysEnabled = true;
+                              await interaction.editReply({
+                                   content: "Please select the frequency of the chore (if specific, specify the days in the last drop down) and submit!",
+                                   components: [row2, row3, row4],
+                              });
+                              await i.deferUpdate();
+                         } else if (daysEnabled) {
+                              daysEnabled = false;
+                              await interaction.editReply({
+                                   content: "Please select the frequency of the chore (if specific, specify the days in the last drop down) and submit!",
+                                   components: [row2, row4],
+                              });
+                              await i.deferUpdate();
+                         } else {
+                              await i.deferUpdate();
+                         }
                     } else if (i.customId === "choreDaySelect") {
                          choreDays = i.values;
                          await i.deferUpdate();
