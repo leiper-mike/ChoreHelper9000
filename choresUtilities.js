@@ -35,6 +35,7 @@ module.exports = {
                     name: choreName,
                     frequency: frequency,
                     days: days,
+                    completed: false
                });
                const data = JSON.stringify(choresJSON);
                const choresPath = path.join(__dirname, `/users/${userId}.json`);
@@ -107,10 +108,12 @@ module.exports = {
                     const userPath = path.join(__dirname, `/users/${file}`);
                     const choresJSON = JSON.parse(await fs.readFile(userPath));
                     for (chore of choresJSON["chores"]) {
-                         if (chore.frequency === frequency || (frequency === "weekly" && chore.frequency === "specific")) {
-                              choresJSON["chores"][chore.id].completed = false;
+                         if (chore.frequency == frequency || (frequency == "weekly" && chore.frequency == "specific")) {
+                              if (choresJSON["chores"].length > 0) 
+                                   choresJSON["chores"][chore.id].completed = false;
                          }
                     }
+                    await fs.writeFile(userPath, JSON.stringify(choresJSON));
                }
           } catch (err) {
                console.error(err);
