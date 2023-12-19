@@ -92,8 +92,7 @@ module.exports = {
                                         .setLabel("Cancel deletion")
                                         .setStyle(ButtonStyle.Secondary);
                                    const row = new ActionRowBuilder().setComponents([confirmButton, cancelButton]);
-                                   const channel = interaction.client.channels.cache.get(interaction.channelId);
-                                   const res = await channel.send({
+                                   const res = await interaction.user.send({
                                         content: `Are you sure you want to remove chore(s) # ${choresToComplete}? This action is irreversible.`,
                                         components: [row],
                                    });
